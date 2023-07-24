@@ -10,14 +10,13 @@ Files from Australian Synchrotron, ANSTO, PD Beamline (23-03-2021)
 Last edited on Tue Jun 8 11:06:00 2021
 """
 
-import glob
 from pathlib import Path
 import numpy as np
 
 
 def TempExtract(folder_dir):
     temps = []
-    for file in glob.glob(str(Path.cwd())+folder_dir+"/*.parab"):
+    for file in Path(Path.cwd()+'\\'+folder_dir).glob(f"*.parab"):
             f = open(file)
             file_name = (file.split("\\")[-1]).strip(".parab")
             index = str(int(file_name.split("_")[-1])).zfill(4)

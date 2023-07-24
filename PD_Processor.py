@@ -1,8 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import glob
 import re
-import pathlib.Path as Path
+from pathlib import Path
 
 
 class PDDatset:
@@ -73,7 +72,7 @@ class PDDatset:
         plt.show()
 
     def ensemble_csv_convert(self):
-        xye_list = glob.glob(f'{self.dataset_root}\\**\\*.xye', recursive=True)
+        xye_list = Path(f'{self.dataset_root}\\').glob(f'**\\*.xye')
         print(f'{self.dataset_root}**\\*.xye')
         print(xye_list)
         for ex in xye_list:
