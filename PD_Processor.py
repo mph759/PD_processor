@@ -15,6 +15,10 @@ class PDDatset:
         print(self.manifest)
 
     def get_manifest(self):
+        '''
+        Find all matching files with the extention '.xye' in the directory.
+        :return: A manifest of all found files
+        '''
         raw_list = sorted(Path(self.dataset_root + '\\' + self.target_dataset).glob(f'*{self.target_subtag}*.xye'))
         # print(Path(self.dataset_root + '\\' + self.target_dataset))
         # print(raw_list)
@@ -24,20 +28,29 @@ class PDDatset:
         self.manifest = sorted(raw_list, key=alphanum_key)
         return sorted(raw_list, key=alphanum_key)
 
-
-    def inspect_pattern(self, pattern_index):
+    def inspect_pattern(self, pattern_index: int):
+        '''
+        Plot a single pattern
+        :param pattern_index: index in the manifest for the single pattern to be plotted
+        :return:
+        '''
         xye_array = np.loadtxt(self.manifest[pattern_index])
         # plt.figure()
         plt.xlabel('2$\\theta$')
         plt.ylabel('Intensity')
-        plt.plot(xye_array[:, 0], np.log10(xye_array[:, 1]), linewidth=0.5)
-        # plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=0.2)
+        # plt.plot(xye_array[:, 0], np.log10(xye_array[:, 1]), linewidth=0.5)
+        plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=0.2)
 
-    def generate_waterfall(self, step=1000):
+    def generate_waterfall(self, step: int = 1000):
+        '''
+        Generate a plot of all patterns in the manifest on a single figure, with a spacing step between each plot
+        :param step: The step amount for the gap between line plots
+        :return:
+        '''
         for indx, pattern in enumerate(self.manifest):
             xye_array = np.loadtxt(pattern)
             xye_array[:, 1] += (indx + 1) * step
-            #plt.plot(xye_array[:, 0], np.log10(xye_array[:, 1]), linewidth=1, label=f'{indx}')
+            # plt.plot(xye_array[:, 0], np.log10(xye_array[:, 1]), linewidth=1, label=f'{indx}')
             plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=1)
             plt.title(f'{pattern}')
         plt.legend()
@@ -82,31 +95,39 @@ class PDDatset:
             print(new_root)
             np.savetxt(new_root, arr, delimiter=',')
 
-    def generate_single(self, title, x_range: list, twotheta=True):
+    def inspect_multi_pattern(self, title: str, x_range: list, twotheta: bool = True):
+        '''
+        Method for plotting all single diffraction patterns from the manifest directory.
+
+        :param title: Title to be printed on plot
+        :param x_range: Limit the x axis to the set range. Does account for unit/variable
+        :param twotheta: If True, it will print using the label 2theta, and convert the data according using the wavelength. If false, will convert to q
+        :return:
+        '''
         for indx, pattern in enumerate(self.manifest):
             xye_array = np.loadtxt(pattern)
             if not twotheta:
-                xye_array[:, 0] = ((4*np.pi) / wavelength) * np.sin(np.deg2rad(xye_array[:, 0])/2)
+                xye_array[:, 0] = ((4 * np.pi) / wavelength) * np.sin(np.deg2rad(xye_array[:, 0]) / 2)
             plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=1)
             plt.title(f'{title}')
-        if twotheta:
-            plt.xlabel('2$\\theta$')
-        else:
-            plt.xlabel('q')
-        plt.ylabel('Intensity')
-        plt.xlim(x_range)
-        plt.gca().get_yaxis().set_ticks([])
-        plt.tight_layout()
-        plt.show()
+            if twotheta:
+                plt.xlabel('2$\\theta$')
+            else:
+                plt.xlabel('q')
+            plt.ylabel('Intensity')
+            plt.xlim(x_range)
+            plt.gca().get_yaxis().set_ticks([])
+            plt.tight_layout()
+            plt.show()
 
 
 if __name__ == '__main__':
     print('Powder Diffraction Processing')
     dataset_root = r'C:/Users/Michael_X13/OneDrive - RMIT University/Beamtime/18855_PD_Bryant/Data/sorted/DESs/'
 
-    target_dataset = 'ChClEG_1to20_VT1'
-    target_subtag = 'p12_ns'  # Can be left blank
-    wavelength = 0.826278E-10 #wavelength in metres
+    target_dataset = 'ChClEG_1to20_VT1'     # the name in the listed file. Can use * as a wildcard
+    target_subtag = 'p12_ns'                # Can be left blank
+    wavelength = 0.826278E-10               # wavelength in metres. Only needed if converting from 2theta to q
     dset = PDDatset(dataset_root, target_dataset, target_subtag)
     # dset.ensemble_csv_convert()
     # dset.inspect_pattern(0)
@@ -122,7 +143,7 @@ if __name__ == '__main__':
     dset.generate_waterfall(step=5000)
     # dset.generate_heatmap([259,327], lim=2250)
 
-    # dset.generate_single(target_dataset, [0,40])
+    # dset.inspect_multi_pattern(target_dataset, [0,40])
 
     """
     Compare
