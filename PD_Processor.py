@@ -1,25 +1,41 @@
+'''
+Processing and plotting of synchrotron data
+Possible to modify to apply to any 2D data file
+
+Written by Jack Binns and Michael Hassett
+Last updated on 2023-08-02
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 import re
 from pathlib import Path
-
+import pandas as pd
 
 class PDDatset:
 
-    def __init__(self, dataset_root, target_dataset, target_subtag):
+    def __init__(self, dataset_root: str, target_dataset: str, target_subtag: str = '', extension: str = '.xye'):
+        '''
+
+        :param dataset_root: Primary directory to where general data to be ingested is stored
+        :param target_dataset: Folder inside the primary directory where the data is stored
+        :param target_subtag: Identifying string in file name of the files you want to plot. Can be an empty string.
+        :param extension: File extension for which you are searching for
+        '''
         self.dataset_root = dataset_root
         self.target_dataset = target_dataset
         self.target_subtag = target_subtag
+        self.ext = extension
         self.manifest = []
-        self.get_manifest()
-        print(self.manifest)
+        self.__get_manifest__()
+        # print(self.manifest)
 
-    def get_manifest(self):
+    def __get_manifest__(self) -> list[Path]:
         '''
-        Find all matching files with the extention '.xye' in the directory.
-        :return: A manifest of all found files
+        Find all matching files with the extension '.xye' in the directory.
+        :return: A list of all found files as Path objects
         '''
-        raw_list = sorted(Path(self.dataset_root + '\\' + self.target_dataset).glob(f'*{self.target_subtag}*.xye'))
+        raw_list = sorted(Path(f'{self.dataset_root}\\{self.target_dataset}').glob(f'*{self.target_subtag}*{self.ext}'))
         # print(Path(self.dataset_root + '\\' + self.target_dataset))
         # print(raw_list)
         convert = lambda text: int(text) if text.isdigit() else text
@@ -41,17 +57,25 @@ class PDDatset:
         # plt.plot(xye_array[:, 0], np.log10(xye_array[:, 1]), linewidth=0.5)
         plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=0.2)
 
-    def generate_waterfall(self, step: int = 1000):
+    def generate_waterfall(self, step: int = 1000, type: str = "normal") -> object:
         '''
         Generate a plot of all patterns in the manifest on a single figure, with a spacing step between each plot
         :param step: The step amount for the gap between line plots
+        :param type: Type of treatment to data before plotting. "normal" will plot as-is, "log" will plot log10 of the data
         :return:
         '''
         for indx, pattern in enumerate(self.manifest):
-            xye_array = np.loadtxt(pattern)
+            try:
+                xye_array = np.loadtxt(pattern)
+            except:
+                xye_array = np.loadtxt(pattern, skiprows=1)
             xye_array[:, 1] += (indx + 1) * step
-            # plt.plot(xye_array[:, 0], np.log10(xye_array[:, 1]), linewidth=1, label=f'{indx}')
-            plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=1)
+            if type == "normal":
+                plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=1)
+            if type == "log":
+                plt.plot(xye_array[:, 0], np.log10(xye_array[:, 1]), linewidth=1)
+            # else:
+                # raise ValueError("type must be 'normal' or 'log'")
             plt.title(f'{pattern}')
         plt.legend()
         plt.xlabel('2$\\theta$')
@@ -59,7 +83,7 @@ class PDDatset:
         plt.gca().get_yaxis().set_ticks([])
         plt.show()
 
-    def generate_heatmap(self, temp_range: list, lim: int = 20000, ):
+    def generate_heatmap(self, temp_range: list[float], lim: int = 20000):
         """
         Parameters
         ----------
@@ -95,7 +119,7 @@ class PDDatset:
             print(new_root)
             np.savetxt(new_root, arr, delimiter=',')
 
-    def inspect_multi_pattern(self, title: str, x_range: list, twotheta: bool = True):
+    def inspect_multi_pattern(self, title: str, x_range: list[float] = [], twotheta: bool = True):
         '''
         Method for plotting all single diffraction patterns from the manifest directory.
 
@@ -107,7 +131,11 @@ class PDDatset:
         for indx, pattern in enumerate(self.manifest):
             xye_array = np.loadtxt(pattern)
             if not twotheta:
-                xye_array[:, 0] = ((4 * np.pi) / wavelength) * np.sin(np.deg2rad(xye_array[:, 0]) / 2)
+                global wavelength
+                try:
+                    xye_array[:, 0] = ((4 * np.pi) / wavelength) * np.sin(np.deg2rad(xye_array[:, 0]) / 2)
+                except:
+                    raise ValueError("wavelength must be given as an int or float")
             plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=1)
             plt.title(f'{title}')
             if twotheta:
@@ -115,7 +143,8 @@ class PDDatset:
             else:
                 plt.xlabel('q')
             plt.ylabel('Intensity')
-            plt.xlim(x_range)
+            if not x_range == []:
+                plt.xlim(x_range)
             plt.gca().get_yaxis().set_ticks([])
             plt.tight_layout()
             plt.show()
@@ -123,12 +152,16 @@ class PDDatset:
 
 if __name__ == '__main__':
     print('Powder Diffraction Processing')
-    dataset_root = r'C:/Users/Michael_X13/OneDrive - RMIT University/Beamtime/18855_PD_Bryant/Data/sorted/DESs/'
+    dataset_root = (r'C:\Users\Michael_X13\OneDrive - RMIT University\Research\2021 - Honours Research Project\Synchrotron Beamtime\Data')   # The main directory; leave the last folder off
+    target_dataset = r'TEAF\TEAF2\CRYST'  # The subdirectory where the exact data is
+    target_subtag = 'p12_ns'  # Text in the listed file. Can be left blank
+    file_ext = '.xye'  # File extension for files to be searched for
+    # wavelength = 0.826278E-10  # wavelength in metres. Only needed if converting from 2theta to q
+    dset = PDDatset(dataset_root, target_dataset, target_subtag, extension=file_ext)
 
-    target_dataset = 'ChClEG_1to20_VT1'     # the name in the listed file. Can use * as a wildcard
-    target_subtag = 'p12_ns'                # Can be left blank
-    wavelength = 0.826278E-10               # wavelength in metres. Only needed if converting from 2theta to q
-    dset = PDDatset(dataset_root, target_dataset, target_subtag)
+    dset.generate_waterfall(step=5000, type="log")
+    dset.generate_heatmap()
+    # dset.generate_waterfall(step=5000, type="normal")
     # dset.ensemble_csv_convert()
     # dset.inspect_pattern(0)
     # dset.inspect_pattern(30)
@@ -140,7 +173,7 @@ if __name__ == '__main__':
 
     # [dset.inspect_pattern(q) for q in range(25,32)]
     # plt.show()
-    dset.generate_waterfall(step=5000)
+    # dset.generate_waterfall(step=5000)
     # dset.generate_heatmap([259,327], lim=2250)
 
     # dset.inspect_multi_pattern(target_dataset, [0,40])
