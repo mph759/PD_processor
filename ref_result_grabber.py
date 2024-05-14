@@ -59,7 +59,7 @@ if __name__ == '__main__':
     base_dir = Path(
         r'C:\Users\Michael_X13\OneDrive - RMIT University\Research\2021 - Honours Research Project\Data '
         r'Analysis\Jack\pil-xrd\Binns_17649')
-    samples = ['AMAMS', 'AMAN', 'BAMS', 'EATFA/EATFA/ht_refinement', ]
+    samples = ['AMAMS', 'AMAN', 'BAMS', 'EATFA/EATFA/ht_refinement']
     for sample in samples:
         current_best = None
         sample_folder = base_dir / sample

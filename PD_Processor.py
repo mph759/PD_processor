@@ -13,7 +13,7 @@ from pathlib import Path
 import pandas as pd
 
 
-class PDDatset:
+class PDDataset:
 
     def __init__(self,
                  dataset_root: str,
@@ -154,30 +154,21 @@ class PDDatset:
 
     def inspect_multi_pattern(self,
                               title: str,
-                              x_range: list[float] = [],
-                              twotheta: bool = True):
-        '''
+                              x_range: list[float] = []):
+        """
         Method for plotting all single diffraction patterns from the manifest directory.
 
         :param title: Title to be printed on plot
         :param x_range: Limit the x axis to the set range. Does account for unit/variable
-        :param twotheta: If True, it will print using the label 2theta, and convert the data according using the wavelength. If false, will convert to q
         :return:
-        '''
+        """
         for indx, pattern in enumerate(self.manifest):
             xye_array = np.loadtxt(pattern)
-            if not twotheta:
-                global wavelength
-                try:
-                    xye_array[:, 0] = ((4 * np.pi) / wavelength) * np.sin(np.deg2rad(xye_array[:, 0]) / 2)
-                except:
-                    raise ValueError("wavelength must be given as an int or float")
+            if self.conversion_factor is not None:
+                xye_array[:, 0] = np.array(map(self.conversion_factor, xye_array[:, 0]))
             plt.plot(xye_array[:, 0], xye_array[:, 1], linewidth=1)
             plt.title(f'{title}')
-            if twotheta:
-                plt.xlabel('2$\\theta$')
-            else:
-                plt.xlabel('q')
+            plt.xlabel(self.x_dim)
             plt.ylabel('Intensity')
             if not x_range == []:
                 plt.xlim(x_range)
@@ -188,8 +179,7 @@ class PDDatset:
 
 if __name__ == '__main__':
     print('Powder Diffraction Processing')
-    dataset_root = (
-        r'C:\Users\Michael_X13\OneDrive - RMIT University\Research\2021 - Honours Research Project\Synchrotron Beamtime\Data')  # The main directory; leave the last folder off
+    dataset_root = (r'C:\Users\Michael_X13\OneDrive - RMIT University\Research\2021 - Honours Research Project\Synchrotron Beamtime\Data')  # The main directory; leave the last folder off
     target_dataset = [r'DEAF\DEAFwool2\VT',
                       r'EAA\EAA\VT',
                       r'EAF\EAF_2',
@@ -206,7 +196,7 @@ if __name__ == '__main__':
 
     for target in target_dataset:
         filename = target.split("\\")[0]
-        dset = PDDatset(dataset_root, target, target_subtag)
+        dset = PDDataset(dataset_root, target, target_subtag)
         # , conversion_factor=convert_2theta_to_q, x_dim='q', extension=file_ext)
         dset.generate_waterfall(step=10000, type="normal",
                                 save=True,
